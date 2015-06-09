@@ -1,4 +1,4 @@
-# MooseX-Storage-IO-MongoDB
+MooseX-Storage-IO-MongoDB
 
 A MooseX::Storage I/O driver to store/retrieve Moose objects to and from a MongoDB database.
 
@@ -18,6 +18,21 @@ perldoc command.
 
     perldoc MooseX::Storage::IO::MongoDB
 
+You can also look for information at:
+
+    RT, CPAN's request tracker (report bugs here)
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=MooseX-Storage-IO-MongoDB
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/MooseX-Storage-IO-MongoDB
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/MooseX-Storage-IO-MongoDB
+
+    Search CPAN
+        http://search.cpan.org/dist/MooseX-Storage-IO-MongoDB/
+
+
 LICENSE AND COPYRIGHT
 
 Copyright (C) 2015 Marco Masetti
@@ -26,7 +41,7 @@ This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a
 copy of the full license at:
 
-http://www.perlfoundation.org/artistic_license_2_0
+L<http://www.perlfoundation.org/artistic_license_2_0>
 
 Any use, modification, and distribution of the Standard or Modified
 Versions is governed by this Artistic License. By using, modifying or
