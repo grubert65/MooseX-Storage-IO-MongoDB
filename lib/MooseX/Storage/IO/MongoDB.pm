@@ -8,7 +8,7 @@ MooseX::Storage::IO::MongoDB - Store and retrieve Moose objects to and from a L<
 
 =head1 VERSION
 
-Version 0.01
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -62,6 +62,11 @@ Now you can store/load your class:
   # if no key attribute 
   my $doc_id = $doc->store();
 
+  # Check if the passed id exists in the data store
+  if ( not MyDoc->exists('foo12') ) {
+    $doc->store();
+  }
+
   # Load the saved data into a new instance
   my $doc2 = MyDoc->load('foo12');
 
@@ -90,11 +95,24 @@ The MongoDB host, defaults to localhost.
 
 =head2 port
 
-The MongoDB port, defaults to 27017
+The MongoDB port, defaults to 27017.
+
+=head2 database
+
+The MongoDB database where to store the object.
 
 =head2 collection
 
 The MongoDB collection where the document should be stored.
+
+=head2 connect_timeout_ms
+
+The amount of time in milliseconds to wait for a new connection to a server (defaults to 10000)
+
+=head2 socket_timeout_ms
+
+The amount of time in milliseconds to wait for a reply from the server before issuing a network exception (defaults to 30000)
+
 
 =head1 EXPORT
 
@@ -106,15 +124,21 @@ if you don't export anything, such as for a purely object-oriented module.
 =cut
 
 use strict;
+use feature 'state';
 use MongoDB;
 use MooseX::Role::Parameterized;
 use namespace::autoclean;
 use Try::Tiny;
-use Carp;
+use Carp 'croak';
+
+use vars qw( $VERSION $c );
 
 #HISTORY
 # 0.01 | 04.06.2015 | First version
-our $VERSION='0.01';
+# 0.02 | 28.06.2016 | Closed bug on collection hash...
+# 0.03 | 28.06.2016 | Introduced timeout parameters...
+$VERSION='0.03';
+$c={};
 
 parameter key_attr => (
     is       => 'rw',
@@ -141,6 +165,20 @@ parameter collection => (
     required => 1,
 );
 
+# the amount of time in milliseconds 
+# to wait for a new connection to a server
+parameter connect_timeout_ms => (
+    isa     => 'Int',
+    default => 10000,
+);
+
+# the amount of time in milliseconds to wait 
+# for a reply from the server before issuing a network exception.
+parameter socket_timeout_ms => (
+    isa     => 'Int',
+    default => 30000,
+);
+
 role {
     my $p = shift;
 
@@ -148,16 +186,23 @@ role {
     requires 'unpack';
 
     method _get_collection => sub { 
+        # TODO this seems wrong
+        # should be stored in a global hash with key the join
+        # of the connection parameters
+        # otherwise we use the same collection object for ALL
+        # documents, even if connection params are different...
+        my $key = $p->database.'.'.$p->collection;
+        return $c->{$key} if ( exists $c->{$key} );
         try {
             my $client = MongoDB::MongoClient->new(
                 host => $p->host, 
-                port => $p->port
+                port => $p->port,
+                connect_timeout_ms => $p->connect_timeout_ms,
+                socket_timeout_ms  => $p->socket_timeout_ms,
             ); 
 
-            my $database = $client->get_database( $p->database )
-                or die "Error connecting to database: $@";
-
-            return $database->get_collection( $p->collection );
+            $c->{$key} = $client->ns( $key );
+            return $c->{$key};
         } catch {
             croak "Error: $_";
         };
@@ -179,7 +224,7 @@ role {
 
 =head3 OUTPUT
 
-    doc id/undef in case of errors
+    An hashref as returned by the MongoDB update method.
 
 =head3 DESCRIPTION
 
@@ -202,13 +247,18 @@ method store => sub {
     # drivers, MongoDB does it for us...)
     my $data;
     $data = $self->pack;
+
+    # we need to re-new a connection each time
+    my $collection = $self->_get_collection()
+        or die "Error getting the collection: $@";
+
     try {
-        return $self->collection->update( 
+        return $collection->update( 
             { $key_attr => $key_val }, 
             $data, 
             { "safe" => 1, "upsert" => 1 } );
     } catch {
-        die ("Error inserting doc: $_");
+        die ("Error storing: $_");
     };
 };
 
@@ -218,7 +268,8 @@ method store => sub {
 
 =head3 INPUT
 
-    $key_value : the value of the key attribute
+    $key_value  : the value of the key attribute
+    %args       : see MooseX::Storage::Basic unpack() info for details
 
 =head3 OUTPUT
 
@@ -247,6 +298,40 @@ the passed id value, returns the blessed document.
         my $obj;
         $obj = $class->unpack($data, %args);
         return $obj;
+    };
+
+#=============================================================
+
+=head2 exists
+
+=head3 INPUT
+
+    the object key
+
+=head3 OUTPUT
+
+    1 if object exists, otherwise undef
+
+=head3 DESCRIPTION
+
+    Checks that object exists.
+
+=cut
+
+#=============================================================
+    method exists => sub {
+        my ( $class, $key_value, %args ) = @_;
+
+        my $collection = $class->_get_collection()
+            or die "Error getting the collection: $@";
+
+        my $key_attr = $p->key_attr;
+        $key_value // die "undefined value for key attr $key_attr";
+
+        my $data = $collection->find_one( { $key_attr => $key_value } )
+            or return undef;
+
+        return $data;
     };
 };
 
