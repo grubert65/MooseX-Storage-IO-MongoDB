@@ -23,6 +23,7 @@ WriteMakefile(
         'MooseX::Role::Parameterized'   => 0,
         'namespace::autoclean'          => 0,
         'Try::Tiny'                     => 0,
+        'TryCatch'                      => 0,
         'Carp'                          => 0,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
