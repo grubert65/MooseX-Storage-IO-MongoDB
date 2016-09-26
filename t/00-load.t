@@ -96,7 +96,7 @@ ok( my $doc_id = $doc->store(), 'store' );
 ok( MyDoc->exists('foo12'), "ok, object now exists...");
 
 # Load the saved data into a new instance
-my $doc2 = MyDoc->load('foo12');
+ok( my $doc2 = MyDoc->load('foo12'), 'loading back document from store...');
 
 # This should say 'Bob Smith'
 is ( $doc2->authors->{bsmith}{name}, 'Bob Smith', 'got right data back' );
@@ -104,7 +104,7 @@ is ( $doc2->authors->{bsmith}{name}, 'Bob Smith', 'got right data back' );
 $doc2->authors->{bsmith}{name} = 'Bob Smith Junior';
 
 ok( $doc2->store(), 'storing again...');
-my $doc3 = MyDoc->load('foo12');
+ok( my $doc3 = MyDoc->load('foo12'), 'loading again...');
 
 # This should say now 'Bob Smith Junior'
 is ( $doc3->authors->{bsmith}{name}, 'Bob Smith Junior', 'got right data back' );
