@@ -18,6 +18,18 @@ BEGIN {
     }
   }
 
+  package Author;
+  use Moose;
+  use MooseX::Storage;
+
+  with Storage;
+
+  has 'name'  => ( is => 'rw', isa => 'Str' );
+  has 'email' => ( is => 'rw', isa => 'Str' );
+  has 'roles' => ( is => 'rw', isa => 'ArrayRef' );
+
+  1; # end of Author package
+
   package MyDoc;
   use Moose;
   use MooseX::Storage;
@@ -34,7 +46,7 @@ BEGIN {
   has 'title'   => (is => 'rw', isa => 'Str');
   has 'body'    => (is => 'rw', isa => 'Str');
   has 'tags'    => (is => 'rw', isa => 'ArrayRef');
-  has 'authors' => (is => 'rw', isa => 'HashRef');
+  has 'authors' => (is => 'rw', isa => 'HashRef[Author]');
 
   1;
 
@@ -55,7 +67,7 @@ BEGIN {
   has 'title'   => (is => 'rw', isa => 'Str');
   has 'body'    => (is => 'rw', isa => 'Str');
   has 'tags'    => (is => 'rw', isa => 'ArrayRef');
-  has 'authors' => (is => 'rw', isa => 'HashRef');
+  has 'authors' => (is => 'rw', isa => 'HashRef[Author]');
 
   1;
 
@@ -76,16 +88,16 @@ my $doc = MyDoc->new(
       body     => 'blah blah',
       tags     => [qw(horse yellow angry)],
       authors  => {
-          jdoe => {
+          jdoe => Author->new(
               name  => 'John Doe',
               email => 'jdoe@gmail.com',
               roles => [qw(author reader)],
-          },
-          bsmith => {
+          ),
+          bsmith => Author->new(
               name  => 'Bob Smith',
               email => 'bsmith@yahoo.com',
               roles => [qw(editor reader)],
-          },
+          ),
       },
   );
 
@@ -116,16 +128,16 @@ ok( my $doc4 = MyDoc2->new(
       body     => 'blah blah',
       tags     => [qw(horse yellow angry)],
       authors  => {
-          jdoe => {
+          jdoe => Author->new (
               name  => 'John Doe',
               email => 'jdoe@gmail.com',
               roles => [qw(author reader)],
-          },
-          bsmith => {
+          ),
+          bsmith => Author->new (
               name  => 'Bob Smith',
               email => 'bsmith@yahoo.com',
               roles => [qw(editor reader)],
-          },
+          ),
       },
   ), 'creating a MyDoc2 doc...');
 ok( $doc4->store(), 'storing...' );
@@ -136,16 +148,16 @@ ok( my $doc5 = MyDoc2->new(
       body     => 'blah blah',
       tags     => [qw(horse yellow angry)],
       authors  => {
-          jdoe => {
+          jdoe => Author->new(
               name  => 'John Doe',
               email => 'jdoe@gmail.com',
               roles => [qw(author reader)],
-          },
-          bsmith => {
+          ),
+          bsmith => Author->new(
               name  => 'Bob Smith',
               email => 'bsmith@yahoo.com',
               roles => [qw(editor reader)],
-          },
+          ),
       },
   ), 'creating another MyDoc2 doc...');
 ok( $doc5->store(), 'and storing it...' );
